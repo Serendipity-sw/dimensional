@@ -1,0 +1,6 @@
+dimensional
+dimensional.exe
+dimensional.pid
+dimensional\.*
+jstmp/*
+/.idea

@@ -234,6 +234,7 @@ func pictureDown(urlPathStr, mkdirPath string) {
 	}
 	io.Copy(file, res.Body)
 	defer res.Body.Close()
+	file.Close()
 }
 
 /**

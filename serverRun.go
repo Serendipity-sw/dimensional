@@ -10,6 +10,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 )
 
 var cookies []*http.Cookie
@@ -185,7 +186,7 @@ func userSendPostsProcess(userCOSPostsUrlPath string) {
 		return
 	}
 	userName := doc.Find(".js-userTpl").Find(".fz14.blue1").First().Text()
-	mkdirPath := fmt.Sprintf("./cos/%s", userName)
+	mkdirPath := fmt.Sprintf("./cos/%s", trimInvalidChar(userName))
 	err = os.MkdirAll(mkdirPath, 0777)
 	if err != nil {
 		glog.Error("userSendPostsProcess create file err! mkdirPath: %s err: %s \n", mkdirPath, err.Error())
@@ -193,7 +194,7 @@ func userSendPostsProcess(userCOSPostsUrlPath string) {
 	}
 	mkdirPathFileName := doc.Find(".js-post-title").First().Text()
 	mkdirPathFileName = strings.TrimSpace(mkdirPathFileName)
-	mkdirPathFileNamePath := fmt.Sprintf("%s/%s", mkdirPath, mkdirPathFileName)
+	mkdirPathFileNamePath := fmt.Sprintf("%s/%s", mkdirPath, trimInvalidChar(mkdirPathFileName))
 	bo, _ := pathExists(mkdirPathFileNamePath)
 	if bo {
 		return
@@ -251,4 +252,17 @@ func pathExists(path string) (bool, error) {
 		return false, nil
 	}
 	return false, err
+}
+
+/**
+屏蔽非法字符
+创建人:邵炜
+创建时间:2016年12月14日14:24:05
+*/
+func trimInvalidChar(name string) string {
+	var invalid []string = []string{"\\", "/", ":", "?", "*", "\"", "<", "|", ">"}
+	for _, value := range invalid {
+		name = strings.Replace(name, value, "", -1)
+	}
+	return name
 }

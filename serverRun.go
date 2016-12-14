@@ -185,7 +185,7 @@ func userSendPostsProcess(userCOSPostsUrlPath string) {
 		return
 	}
 	userName := doc.Find(".js-userTpl").Find(".fz14.blue1").First().Text()
-	mkdirPath := fmt.Sprintf("./COS/%s", userName)
+	mkdirPath := fmt.Sprintf("./cos/%s", userName)
 	err = os.MkdirAll(mkdirPath, 0777)
 	if err != nil {
 		glog.Error("userSendPostsProcess create file err! mkdirPath: %s err: %s \n", mkdirPath, err.Error())

@@ -83,13 +83,13 @@ func analysisAllFollowUser(pagerNumber int) {
 		attentionPage, err := httpclient.WithCookie(cookies...).Get(httpUrl, nil)
 		if err != nil {
 			glog.Error("analysisFollowUser send http error! pagerNumber: %d err: %s \n", pagerNumber, err.Error())
-			return
+			continue
 		}
 		doc, err := goquery.NewDocumentFromReader(attentionPage.Body)
 		attentionPage.Body.Close()
 		if err != nil {
 			glog.Error("analysisFollowUser anaysis followUser Page err! err: %s \n", err.Error())
-			return
+			continue
 		}
 		doc.Find(".l-newFanBoxList.l-clearfix").Find("li").Each(func(indexNumber int, nodeObj *goquery.Selection) {
 			hrefStr, bo := nodeObj.Find("a").First().Attr("href")
@@ -97,6 +97,7 @@ func analysisAllFollowUser(pagerNumber int) {
 				analysisFollowUser(hrefStr)
 			}
 		})
+		pagerNumber--
 	}
 }
 
@@ -163,6 +164,7 @@ func analysisFollowUserCOSEveryPage(followUserCOSPageUrl string, pageNumber int)
 				userSendPostsProcess(fmt.Sprintf("http://bcy.net%s", hrefUrlPath))
 			}
 		})
+		pageNumber--
 	}
 }
 

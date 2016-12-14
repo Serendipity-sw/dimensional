@@ -186,43 +186,30 @@ func userSendPostsProcess(userCOSPostsUrlPath string) {
 	}
 	userName := doc.Find(".js-userTpl").Find(".fz14.blue1").First().Text()
 	mkdirPath := fmt.Sprintf("./COS/%s", userName)
-	fmt.Println("1")
 	err = os.MkdirAll(mkdirPath, 0777)
 	if err != nil {
 		glog.Error("userSendPostsProcess create file err! mkdirPath: %s err: %s \n", mkdirPath, err.Error())
 		return
 	}
-	fmt.Println("2")
 	mkdirPathFileName := doc.Find(".js-post-title").First().Text()
 	mkdirPathFileName = strings.TrimSpace(mkdirPathFileName)
-	fmt.Println("3")
 	mkdirPathFileNamePath := fmt.Sprintf("%s/%s", mkdirPath, mkdirPathFileName)
 	bo, _ := pathExists(mkdirPathFileNamePath)
-	fmt.Println("3")
 	if bo {
 		return
 	}
-	fmt.Println("4")
 	err = os.MkdirAll(mkdirPathFileNamePath, 0777)
-	fmt.Println("5")
 	if err != nil {
 		glog.Error("userSendPostsProcess userCOSPosts exsis! mkdirPathFileNamePath: %s err: %s \n", mkdirPathFileNamePath, err.Error())
 		return
 	}
-	fmt.Println("6")
-	doc.Find(".content-img-wrap-inner").Each(func(indexNumber int, nodeObj *goquery.Selection) {
-		fmt.Println("8")
-		COSPictureUrlStr, bo := nodeObj.Find("a").First().Attr("href")
+	doc.Find(".detail_std.detail_clickable").Each(func(indexNumber int, nodeObj *goquery.Selection) {
+		COSPictureUrlStr, bo := nodeObj.Attr("src")
 		if bo {
-			COSPictureUrlArray := strings.Split(COSPictureUrlStr, "&url=")
-			if len(COSPictureUrlArray) != 2 {
-				glog.Error("userSendPostsProcess picuteUrl err! COSPictureUrlStr: %s \n", COSPictureUrlStr)
-			} else {
-				pictureDown(COSPictureUrlArray[1], mkdirPathFileNamePath)
-			}
+			COSPictureUrlStr = COSPictureUrlStr[:strings.LastIndex(COSPictureUrlStr, "/")]
+			pictureDown(COSPictureUrlStr, mkdirPathFileNamePath)
 		}
 	})
-	fmt.Println("7")
 }
 
 /**
@@ -246,6 +233,7 @@ func pictureDown(urlPathStr, mkdirPath string) {
 		return
 	}
 	io.Copy(file, res.Body)
+	defer res.Body.Close()
 }
 
 /**

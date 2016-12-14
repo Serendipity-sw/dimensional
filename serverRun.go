@@ -2,9 +2,9 @@ package main
 
 import (
 	"fmt"
+	"github.com/PuerkitoBio/goquery"
 	"github.com/ddliu/go-httpclient"
 	"github.com/smtc/glog"
-	"goquery"
 	"io"
 	"net/http"
 	"os"

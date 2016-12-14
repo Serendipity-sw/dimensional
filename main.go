@@ -90,7 +90,7 @@ func watchAttention(ch chan struct{}, wg *sync.WaitGroup) {
 		wg.Done()
 	}()
 	for {
-		go serverRun()
+		serverRun()
 		jsTmr.Reset(timing)
 		<-jsTmr.C
 	}

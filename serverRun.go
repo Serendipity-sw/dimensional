@@ -122,7 +122,7 @@ func analysisFollowUser(urlPathStr string) {
 	pageNumberANode, bo := doc.Find(".l-home-follow-pager li").Last().Find("a").Attr("href")
 	if bo {
 		pageNumberArray := strings.Split(pageNumberANode, "p=")
-		if pageNumberArray != 2 {
+		if len(pageNumberArray) != 2 {
 			glog.Error("analysisFollowUser pageNumber analysis err! pageNumberANode: %s \n", pageNumberANode)
 		}
 		pageNumber, err := strconv.Atoi(pageNumberArray[1])
@@ -151,7 +151,8 @@ func analysisFollowUserCOSEveryPage(followUserCOSPageUrl string, pageNumber int)
 			glog.Error("analysisFollowUserCOSEveryPage send http err! httpUrl: %s err: %s \n", httpUrl, err.Error())
 			return
 		}
-		doc, err := goquery.NewDocumentFromReader(attentionPage)
+		doc, err := goquery.NewDocumentFromReader(attentionPage.Body)
+		attentionPage.Body.Close()
 		if err != nil {
 			glog.Error("analysisFollowUserCOSEveryPage analysis documenterr! sendHttp: %s  err: %s \n", httpUrl, err.Error())
 			return

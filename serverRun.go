@@ -35,6 +35,7 @@ func serverRun() {
 	attentionPageProcess()
 }
 
+// 获取自己的uid
 func getMyUserIndex() (uid string, errRet error) {
 	uid = ""
 	userIndexPage, err := httpclient.WithCookie(cookies...).Get("http://bcy.net/home/user/index", nil)
@@ -57,6 +58,29 @@ func getMyUserIndex() (uid string, errRet error) {
 		if len(uidArray) != 2 {
 			glog.Error("getMyUserIndex err! uidUrl: %s \n", uidUrl)
 			return uid, errors.New(fmt.Sprintf("getMyUserIndex err! uidUrl: %s \n", uidUrl))
+		}
+
+		uid = uidArray[1]
+	}
+	return uid, nil
+}
+
+// 获取提供页面 goquery.Document 中的uid
+func getUserIndexByDetailPageDoc(detailPage *goquery.Document) (uid string, errRet error) {
+	uid = ""
+
+	if detailPage == nil {
+		glog.Error("getUserIndexByDetailPageDoc detailPage error! err: detailPage == nil \n")
+		return uid, errors.New(fmt.Sprintf("getUserIndexByDetailPageDoc detailPage error! err: detailPage == nil \n"))
+	}
+
+	uidUrl, bo := detailPage.Find(".posr._avatar--xl.center-block.mb10").Find("._avatar._avatar--xl._avatar--user").Attr("href")
+	if bo {
+		uidArray := strings.Split(uidUrl, "/u/")
+
+		if len(uidArray) != 2 {
+			glog.Error("getUserIndexByDetailPageDoc err! uidUrl: %s \n", uidUrl)
+			return uid, errors.New(fmt.Sprintf("getUserIndexByDetailPageDoc err! uidUrl: %s \n", uidUrl))
 		}
 
 		uid = uidArray[1]
@@ -149,6 +173,7 @@ func analysisAllFollowUser(uid string, pagerNumber int) {
 */
 func analysisFollowUser(urlPathStr string) {
 	userPageHomeUrl := fmt.Sprintf("http://bcy.net%s/post/Cos", urlPathStr)
+	glog.Info("userPageHomeUrl %s\n", userPageHomeUrl)
 	attentionPage, err := httpclient.WithCookie(cookies...).Get(userPageHomeUrl, nil)
 	if err != nil {
 		glog.Error("analysisFollowUser send http err! url: %s err: %s \n", userPageHomeUrl, err.Error())
@@ -187,6 +212,7 @@ func analysisFollowUserCOSEveryPage(followUserCOSPageUrl string, pageNumber int)
 			break
 		}
 		httpUrl := fmt.Sprintf("%s?p=%d", followUserCOSPageUrl, pageNumber)
+		glog.Info("httpUrl %s\n", httpUrl)
 		attentionPage, err := httpclient.WithCookie(cookies...).Get(httpUrl, nil)
 		if err != nil {
 			glog.Error("analysisFollowUserCOSEveryPage send http err! httpUrl: %s err: %s \n", httpUrl, err.Error())
@@ -208,6 +234,12 @@ func analysisFollowUserCOSEveryPage(followUserCOSPageUrl string, pageNumber int)
 	}
 }
 
+func getCoserDir(uid string, userName string) string {
+	userName = trimInvalidChar(userName)
+
+	return fmt.Sprintf("%s-%s", uid, userName)
+}
+
 /**
 用户发的每一页cos页面图片下载
 创建人:邵炜
@@ -226,8 +258,18 @@ func userSendPostsProcess(userCOSPostsUrlPath string) {
 		glog.Error("userSendPostsProcess read body err! userCOSPostsUrlPath: %s err: %s \n", userCOSPostsUrlPath, err.Error())
 		return
 	}
+
 	userName := doc.Find(".js-userTpl").Find(".fz14.blue1").First().Text()
-	mkdirPath := fmt.Sprintf("./cos/%s", trimInvalidChar(userName))
+
+	uid, err := getUserIndexByDetailPageDoc(doc)
+	if err != nil {
+		glog.Error("userSendPostsProcess getUserIndexByDetailPageDoc! err: %s \n", err.Error())
+		return
+	}
+
+	coserDirName := getCoserDir(uid, userName)
+
+	mkdirPath := fmt.Sprintf("./cos/%s", coserDirName)
 	err = os.MkdirAll(mkdirPath, 0777)
 	if err != nil {
 		glog.Error("userSendPostsProcess create file err! mkdirPath: %s err: %s \n", mkdirPath, err.Error())

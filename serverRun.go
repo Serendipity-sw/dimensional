@@ -267,9 +267,11 @@ func userSendPostsProcess(userCOSPostsUrlPath string) {
 		return
 	}
 
-	coserDirName := getCoserDir(uid, userName)
+	//coserDirName := getCoserDir(uid, userName)
+	//mkdirPath := fmt.Sprintf("./cos/%s", coserDirName)
 
-	mkdirPath := fmt.Sprintf("./cos/%s", coserDirName)
+	mkdirPath := getCoserExistDirPath(uid, userName, true)
+
 	err = os.MkdirAll(mkdirPath, 0777)
 	if err != nil {
 		glog.Error("userSendPostsProcess create file err! mkdirPath: %s err: %s \n", mkdirPath, err.Error())

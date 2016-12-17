@@ -4,3 +4,5 @@ dimensional.pid
 dimensional\.*
 jstmp/*
 /.idea
+cos/
+logs/

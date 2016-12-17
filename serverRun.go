@@ -1,15 +1,17 @@
 package main
 
 import (
+	"errors"
 	"fmt"
-	"github.com/PuerkitoBio/goquery"
-	"github.com/ddliu/go-httpclient"
-	"github.com/smtc/glog"
 	"io"
 	"net/http"
 	"os"
 	"strconv"
 	"strings"
+
+	"github.com/PuerkitoBio/goquery"
+	"github.com/ddliu/go-httpclient"
+	"github.com/smtc/glog"
 )
 
 var cookies []*http.Cookie
@@ -33,18 +35,56 @@ func serverRun() {
 	attentionPageProcess()
 }
 
+func getMyUserIndex() (uid string, errRet error) {
+	uid = ""
+	userIndexPage, err := httpclient.WithCookie(cookies...).Get("http://bcy.net/home/user/index", nil)
+	if err != nil {
+		glog.Error("getMyUserIndex http get index page err! err: %s \n", err.Error())
+		return uid, errors.New(fmt.Sprintf("getMyUserIndex http get index page err! err: %s \n", err.Error()))
+	}
+	defer userIndexPage.Body.Close()
+
+	doc, err := goquery.NewDocumentFromReader(userIndexPage.Body)
+	if err != nil {
+		glog.Error("getMyUserIndex NewDocumentFromReader read error! err: %s \n", err.Error())
+		return uid, errors.New(fmt.Sprintf("getMyUserIndex NewDocumentFromReader read error! err: %s \n", err.Error()))
+	}
+
+	uidUrl, bo := doc.Find(".posr._avatar--xl.l-left.mr15").Find("._avatar._avatar--xl._avatar--user").Attr("href")
+	if bo {
+		uidArray := strings.Split(uidUrl, "/u/")
+
+		if len(uidArray) != 2 {
+			glog.Error("getMyUserIndex err! uidUrl: %s \n", uidUrl)
+			return uid, errors.New(fmt.Sprintf("getMyUserIndex err! uidUrl: %s \n", uidUrl))
+		}
+
+		uid = uidArray[1]
+	}
+	return uid, nil
+}
+
 /**
 查询关注列表
 创建人:邵炜
 创建时间:2016年12月13日12:00:49
 */
 func attentionPageProcess() {
-	attentionPage, err := httpclient.WithCookie(cookies...).Get("http://bcy.net/u/1496212/following", nil)
+	uid, err := getMyUserIndex()
+	if err != nil {
+		glog.Error("attentionPageProcess http get getMyUserIndex err! err: %s \n", err.Error())
+		return
+	}
+
+	glog.Info("My Uid: %s\n", uid)
+
+	attentionPage, err := httpclient.WithCookie(cookies...).Get(fmt.Sprintf("http://bcy.net/u/%s/following", uid), nil)
 	if err != nil {
 		glog.Error("attentionPageProcess http get follow page err! err: %s \n", err.Error())
 		return
 	}
 	defer attentionPage.Body.Close()
+
 	doc, err := goquery.NewDocumentFromReader(attentionPage.Body)
 	if err != nil {
 		glog.Error("attentionPageProcess NewDocumentFromReader read error! err: %s \n", err.Error())
@@ -63,7 +103,7 @@ func attentionPageProcess() {
 			glog.Error("attentionPageProcess pager number convert string to int err! numberPager: %s \n", numberArray[1])
 			return
 		}
-		analysisAllFollowUser(lastPageNumber)
+		analysisAllFollowUser(uid, lastPageNumber)
 	}
 }
 
@@ -73,13 +113,13 @@ func attentionPageProcess() {
 创建时间:2016年12月13日16:32:27
 输入参数:总页数
 */
-func analysisAllFollowUser(pagerNumber int) {
+func analysisAllFollowUser(uid string, pagerNumber int) {
 	httpUrl := ""
 	for {
 		if pagerNumber <= 0 {
 			break
 		}
-		httpUrl = fmt.Sprintf("http://bcy.net/u/1496212/following?&p=%d", pagerNumber)
+		httpUrl = fmt.Sprintf(fmt.Sprintf("http://bcy.net/u/%s/following?&p=%d", uid), pagerNumber)
 		attentionPage, err := httpclient.WithCookie(cookies...).Get(httpUrl, nil)
 		if err != nil {
 			glog.Error("analysisFollowUser send http error! pagerNumber: %d err: %s \n", pagerNumber, err.Error())

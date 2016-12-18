@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"net/http"
 	"strconv"
 	"strings"
 
@@ -19,7 +18,7 @@ type UserInfo struct {
 	UserName     string `json:"UserName"`     // 处理后的用户名 eg. 去掉非法字符，"-" 替换为 "="
 	UserNamePure string `json:"UserNamePure"` // 原始用户名
 
-	cookies []*http.Cookie // 存储登陆cookies
+	// cookies []*http.Cookie // 存储登陆cookies // 注：httpclient 会自动根据域名存储cookies，默认后面同域名的请求会自动携带cookies
 
 	UrlUserDetail string `json:"UrlUserDetail"` // 用户主页
 
@@ -50,7 +49,7 @@ type PostInfo struct {
 
 func (this *UserInfo) Login(loginUserName string, password string) error {
 	//res, err := httpclient.WithHeaders(nil).Post("http://bcy.net/public/dologin", map[string]string{
-	res, err := httpclient.WithHeaders(appConfig.HttpHeaderForLogin).Post(appConfig.LoginUrl, map[string]string{
+	_, err := httpclient.WithHeaders(appConfig.HttpHeaderForLogin).Post(appConfig.LoginUrl, map[string]string{
 		"email":    loginUserName,
 		"password": password,
 		"remember": "1",
@@ -59,8 +58,8 @@ func (this *UserInfo) Login(loginUserName string, password string) error {
 		glog.Error("serverRun http login err! err: %s \n", err.Error())
 		return err
 	}
-	glog.Info("Login cookies %v\n", res.Cookies())
-	this.cookies = res.Cookies()
+	glog.Info("Login cookies %v\n", httpclient.Cookies("http://bcy.net"))
+	//this.cookies = httpclient.Cookies("http://bcy.net")
 	return err
 }
 
@@ -117,7 +116,7 @@ func (this *UserInfo) AnalyseFollowingInfo() (err error) {
 		return errors.New(fmt.Sprintf("UserInfo Not Init"))
 	}
 
-	followingPage, err := httpclient.WithCookie(this.cookies...).Get(fmt.Sprintf("http://bcy.net/u/%s/following", this.Id), nil)
+	followingPage, err := httpclient.Get(fmt.Sprintf("http://bcy.net/u/%s/following", this.Id), nil)
 	if err != nil {
 		glog.Error("AnalyseFollowingInfo http get follow page err! err: %s \n", err.Error())
 		return err
@@ -150,7 +149,7 @@ func (this *UserInfo) AnalyseFollowingInfo() (err error) {
 		for pageNumber := 1; pageNumber <= lastPageNumber; pageNumber++ {
 			httpUrl = fmt.Sprintf("http://bcy.net/u/%s/following?&p=%d", this.Id, pageNumber)
 			glog.Info("%v\n", httpUrl)
-			attentionPage, err := httpclient.WithCookie(this.cookies...).Get(httpUrl, nil)
+			attentionPage, err := httpclient.Get(httpUrl, nil)
 			if err != nil {
 				glog.Error("AnalyseFollowingInfo send http error! pageNumber: %d err: %s \n", pageNumber, err.Error())
 				continue
@@ -190,7 +189,7 @@ func (this *UserInfo) AnalyseFollowingInfo() (err error) {
 func (this *UserInfo) AnalysePostCosInfo() (err error) {
 	userPageHomeUrl := fmt.Sprintf("http://bcy.net/u/%s/post/Cos", this.Id)
 	glog.Info("userPageHomeUrl %s\n", userPageHomeUrl)
-	attentionPage, err := httpclient.WithCookie(this.cookies...).Get(userPageHomeUrl, nil)
+	attentionPage, err := httpclient.Get(userPageHomeUrl, nil)
 	if err != nil {
 		glog.Error("AnalysePostCosInfo send http err! url: %s err: %s \n", userPageHomeUrl, err.Error())
 		return
@@ -219,7 +218,7 @@ func (this *UserInfo) AnalysePostCosInfo() (err error) {
 		for pageNumber := 1; pageNumber <= lastPageNumber; pageNumber++ {
 			httpUrl := fmt.Sprintf("%s?p=%d", userPageHomeUrl, pageNumber)
 			glog.Info("httpUrl %s\n", httpUrl)
-			attentionPage, err := httpclient.WithCookie(this.cookies...).Get(httpUrl, nil)
+			attentionPage, err := httpclient.Get(httpUrl, nil)
 			if err != nil {
 				glog.Error("AnalysePostCosInfo send http err! httpUrl: %s err: %s \n", httpUrl, err.Error())
 				return err

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/ddliu/go-httpclient"
 	"github.com/guotie/config"
 	"github.com/smtc/glog"
 )
@@ -18,6 +19,8 @@ func TestUserInfo(t *testing.T) {
 	myAccount := &UserInfo{}
 	myAccount.Login(email, password)
 
+	glog.Info("cookies %v\n", httpclient.Cookies("http://bcy.net"))
+
 	uid, err := getMyUserIndex()
 	if err != nil {
 		glog.Error("get getMyUserIndex err! err: %s \n", err.Error())
@@ -26,8 +29,6 @@ func TestUserInfo(t *testing.T) {
 
 	myAccount.Init(uid)
 
-	glog.Info("cookies %v\n", myAccount.cookies)
-
 	myAccount.AnalyseFollowingInfo()
 	buf, _ := myAccount.Marshal()
 	glog.Info("%s\n", buf)
@@ -35,15 +36,18 @@ func TestUserInfo(t *testing.T) {
 	coser := &UserInfo{}
 	if len(myAccount.FollowingUid) > 1 {
 		coser.Init(myAccount.FollowingUid[1])
-		coser.AnalysePostCosInfo()
+		err := coser.AnalysePostCosInfo()
+		if err != nil {
+			fmt.Printf("%v\n", err.Error())
+		}
 		for _, post := range coser.PostCos {
-			err := post.AnalysePostCosImageInfo(myAccount.cookies)
+			err := post.AnalysePostCosImageInfo()
 			if err != nil {
 				fmt.Printf("%v\n", err.Error())
 			}
 			break
 		}
 		buf, _ = coser.Marshal()
-		glog.Info("%s\n", buf)
+		glog.Info("coser %s\n", buf)
 	}
 }

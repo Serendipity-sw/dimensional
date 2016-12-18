@@ -319,6 +319,7 @@ func pictureDown(urlPathStr, mkdirPath string) {
 		return
 	}
 	io.Copy(file, res.Body)
+	glog.Info("pictureDown picute filePath: %s \n", picuteCreatePathStr)
 	defer res.Body.Close()
 	file.Close()
 }

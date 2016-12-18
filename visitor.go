@@ -1,21 +1,20 @@
 package main
 
 import (
-	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
-
-	"github.com/smtc/glog"
 )
 
 func getCoserExistDirPath(uid string, userName string, autoCreateOrUpdate bool) string {
 	userName = trimInvalidChar(userName)
+	// 用户名中的 "-" 会被替换为 "="
+	userName = strings.Replace(userName, "-", "=", -1)
 
 	dirList, dirNameList, _ := getDirList("./cos", uid+"-")
-	glog.Info("dirList %v\n", dirList)
-	glog.Info("dirNameList %v\n", dirNameList)
+	//glog.Info("dirList %v\n", dirList)
+	//glog.Info("dirNameList %v\n", dirNameList)
 
 	if !autoCreateOrUpdate {
 		if len(dirList) > 0 {
@@ -52,19 +51,19 @@ func getCoserExistDirPath(uid string, userName string, autoCreateOrUpdate bool) 
 		nameUnion += "-" + nameArray[1]
 	}
 
-	glog.Info(fmt.Sprintf("nameUnion %s\n", nameUnion))
+	//glog.Info(fmt.Sprintf("nameUnion %s\n", nameUnion))
 
 	currentPath := "./cos/" + nameUnion
 
-	glog.Info(fmt.Sprintf("formerPath %s\n", formerPath))
+	//glog.Info(fmt.Sprintf("formerPath %s\n", formerPath))
 
 	if formerPath != currentPath && formerPath != "" && !fileExist(currentPath) {
 		err := os.Rename(formerPath, currentPath)
 		_ = err
-		glog.Info(fmt.Sprintf("%v\n", err))
+		//glog.Info(fmt.Sprintf("%v\n", err))
 	}
 
-	glog.Info(fmt.Sprintf("currentPath %s\n", currentPath))
+	//glog.Info(fmt.Sprintf("currentPath %s\n", currentPath))
 
 	return currentPath
 }

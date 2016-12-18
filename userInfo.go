@@ -149,9 +149,6 @@ func (this *UserInfo) AnalyseFollowingInfo() (err error) {
 
 		httpUrl := ""
 		for pageNumber := 1; pageNumber <= lastPageNumber; pageNumber++ {
-			if pageNumber == 2 {
-				break
-			}
 			httpUrl = fmt.Sprintf("http://bcy.net/u/%s/following?&p=%d", this.Id, pageNumber)
 			glog.Info("%v\n", httpUrl)
 			attentionPage, err := httpclient.WithCookie(this.cookies...).Get(httpUrl, nil)
@@ -281,8 +278,8 @@ func (this *PostInfo) AnalysePostCosImageInfo(cookies []*http.Cookie) (err error
 	//func userSendPostsProcess(userCOSPostsUrlPath string) {
 	this.Image = make([]string, 0, 0)
 
-	//attentionPage, err := httpclient.WithCookie(cookies...).Get(this.Url, nil)
-	attentionPage, err := httpclient.WithHeaders(appConfig.HttpHeaderForNormal).WithCookie(cookies...).Get(this.Url, nil)
+	attentionPage, err := httpclient.WithCookie(cookies...).Get(this.Url, nil)
+	//attentionPage, err := httpclient.WithHeaders(appConfig.HttpHeaderForNormal).WithCookie(cookies...).Get(this.Url, nil)
 	if err != nil {
 		glog.Error("userSendPostsProcess send http err! httpUrl: %s err: %s \n", this.Url, err.Error())
 		return

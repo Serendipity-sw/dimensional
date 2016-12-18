@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"os"
 	"strconv"
 	"strings"
 
@@ -274,46 +273,44 @@ func (this *UserInfo) AnalysePostCosInfo() (err error) {
 // 解析用户作品页面的图片 适配于cos作品
 // 存储在 PostInfo.Image 数组
 // 不做其他操作
-func (this *PostInfo) AnalysePostCosImageInfo(cookies []*http.Cookie) (err error) {
+func (this *PostInfo) AnalysePostCosImageInfo() (err error) {
 	//func userSendPostsProcess(userCOSPostsUrlPath string) {
 	this.Image = make([]string, 0, 0)
-
 	attentionPage, err := httpclient.WithCookie(cookies...).Get(this.Url, nil)
-	//attentionPage, err := httpclient.WithHeaders(appConfig.HttpHeaderForNormal).WithCookie(cookies...).Get(this.Url, nil)
 	if err != nil {
 		glog.Error("userSendPostsProcess send http err! httpUrl: %s err: %s \n", this.Url, err.Error())
-		return
+		return err
 	}
 
 	doc, err := goquery.NewDocumentFromReader(attentionPage.Body)
 	attentionPage.Body.Close()
 	if err != nil {
 		glog.Error("userSendPostsProcess read body err! userCOSPostsUrlPath: %s err: %s \n", this.Url, err.Error())
-		return
+		return err
 	}
 
 	//coserDirName := getCoserDir(uid, userName)
 	//mkdirPath := fmt.Sprintf("./cos/%s", coserDirName)
 
-	mkdirPath := this.PathStorage
+	//mkdirPath := this.PathStorage
 
-	err = os.MkdirAll(mkdirPath, 0777)
-	if err != nil {
-		glog.Error("userSendPostsProcess create file err! mkdirPath: %s err: %s \n", mkdirPath, err.Error())
-		return
-	}
-	mkdirPathFileName := doc.Find(".js-post-title").First().Text()
-	mkdirPathFileName = strings.TrimSpace(mkdirPathFileName)
-	mkdirPathFileNamePath := fmt.Sprintf("%s/%s", mkdirPath, getVaildName(mkdirPathFileName))
-	bo, _ := pathExists(mkdirPathFileNamePath)
-	if bo {
-		return
-	}
-	err = os.MkdirAll(mkdirPathFileNamePath, 0777)
-	if err != nil {
-		glog.Error("userSendPostsProcess userCOSPosts exsis! mkdirPathFileNamePath: %s err: %s \n", mkdirPathFileNamePath, err.Error())
-		return
-	}
+	//	err = os.MkdirAll(mkdirPath, 0777)
+	//	if err != nil {
+	//		glog.Error("userSendPostsProcess create file err! mkdirPath: %s err: %s \n", mkdirPath, err.Error())
+	//		return err
+	//	}
+	//	mkdirPathFileName := doc.Find(".js-post-title").First().Text()
+	//	mkdirPathFileName = strings.TrimSpace(mkdirPathFileName)
+	//	mkdirPathFileNamePath := fmt.Sprintf("%s/%s", mkdirPath, getVaildName(mkdirPathFileName))
+	//	bo, _ := pathExists(mkdirPathFileNamePath)
+	//	if bo {
+	//		return errors.New(fmt.Sprintf("pathExists [%s]\n", mkdirPathFileNamePath))
+	//	}
+	//	err = os.MkdirAll(mkdirPathFileNamePath, 0777)
+	//	if err != nil {
+	//		glog.Error("userSendPostsProcess userCOSPosts exsis! mkdirPathFileNamePath: %s err: %s \n", mkdirPathFileNamePath, err.Error())
+	//		return err
+	//	}
 	doc.Find(".detail_std.detail_clickable").Each(func(indexNumber int, nodeObj *goquery.Selection) {
 		COSPictureUrlStr, bo := nodeObj.Attr("src")
 		if bo {
@@ -322,7 +319,7 @@ func (this *PostInfo) AnalysePostCosImageInfo(cookies []*http.Cookie) (err error
 			this.Image = append(this.Image, COSPictureUrlStr)
 		}
 	})
-	return
+	return nil
 }
 
 // json 反序列化

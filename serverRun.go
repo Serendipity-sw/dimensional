@@ -1,7 +1,6 @@
 package main
 
 import (
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -32,60 +31,8 @@ func serverRun() {
 		return
 	}
 	cookies = res.Cookies()
+	InitConfig()
 	attentionPageProcess()
-}
-
-// 获取自己的uid
-func getMyUserIndex() (uid string, errRet error) {
-	uid = ""
-	userIndexPage, err := httpclient.WithCookie(cookies...).Get("http://bcy.net/home/user/index", nil)
-	if err != nil {
-		glog.Error("getMyUserIndex http get index page err! err: %s \n", err.Error())
-		return uid, errors.New(fmt.Sprintf("getMyUserIndex http get index page err! err: %s \n", err.Error()))
-	}
-	defer userIndexPage.Body.Close()
-
-	doc, err := goquery.NewDocumentFromReader(userIndexPage.Body)
-	if err != nil {
-		glog.Error("getMyUserIndex NewDocumentFromReader read error! err: %s \n", err.Error())
-		return uid, errors.New(fmt.Sprintf("getMyUserIndex NewDocumentFromReader read error! err: %s \n", err.Error()))
-	}
-
-	uidUrl, bo := doc.Find(".posr._avatar--xl.l-left.mr15").Find("._avatar._avatar--xl._avatar--user").Attr("href")
-	if bo {
-		uidArray := strings.Split(uidUrl, "/u/")
-
-		if len(uidArray) != 2 {
-			glog.Error("getMyUserIndex err! uidUrl: %s \n", uidUrl)
-			return uid, errors.New(fmt.Sprintf("getMyUserIndex err! uidUrl: %s \n", uidUrl))
-		}
-
-		uid = uidArray[1]
-	}
-	return uid, nil
-}
-
-// 获取提供页面 goquery.Document 中的uid
-func getUserIndexByDetailPageDoc(detailPage *goquery.Document) (uid string, errRet error) {
-	uid = ""
-
-	if detailPage == nil {
-		glog.Error("getUserIndexByDetailPageDoc detailPage error! err: detailPage == nil \n")
-		return uid, errors.New(fmt.Sprintf("getUserIndexByDetailPageDoc detailPage error! err: detailPage == nil \n"))
-	}
-
-	uidUrl, bo := detailPage.Find(".posr._avatar--xl.center-block.mb10").Find("._avatar._avatar--xl._avatar--user").Attr("href")
-	if bo {
-		uidArray := strings.Split(uidUrl, "/u/")
-
-		if len(uidArray) != 2 {
-			glog.Error("getUserIndexByDetailPageDoc err! uidUrl: %s \n", uidUrl)
-			return uid, errors.New(fmt.Sprintf("getUserIndexByDetailPageDoc err! uidUrl: %s \n", uidUrl))
-		}
-
-		uid = uidArray[1]
-	}
-	return uid, nil
 }
 
 /**
@@ -138,6 +85,24 @@ func attentionPageProcess() {
 输入参数:总页数
 */
 func analysisAllFollowUser(uid string, pagerNumber int) {
+	//	user := &UserInfo{}
+	//	user.Init(uid)
+	//	user.AnalyseFollowingInfo()
+	//	buf, _ := user.Marshal()
+	//	glog.Info("%s\n", buf)
+	//	glog.Info("cookies %v\n", cookies)
+
+	//	coser := &UserInfo{}
+	//	coser.Init(user.FollowingUid[1])
+	//	coser.AnalysePostCosInfo()
+	//	for _, value := range coser.PostCos {
+	//		value.AnalysePostCosImageInfo(cookies)
+	//	}
+	//	buf, _ = coser.Marshal()
+	//	glog.Info("%s\n", buf)
+
+	//	return
+
 	httpUrl := ""
 	for {
 		if pagerNumber <= 0 {
@@ -253,6 +218,12 @@ func userSendPostsProcess(userCOSPostsUrlPath string) {
 		return
 	}
 	doc, err := goquery.NewDocumentFromReader(attentionPage.Body)
+
+	//	post := &PostInfo{}
+	//	post.Url = userCOSPostsUrlPath
+	//	post.AnalysePostCosImageInfo(cookies)
+	//	glog.Info("%v\n", post)
+
 	attentionPage.Body.Close()
 	if err != nil {
 		glog.Error("userSendPostsProcess read body err! userCOSPostsUrlPath: %s err: %s \n", userCOSPostsUrlPath, err.Error())

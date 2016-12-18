@@ -8,9 +8,7 @@ import (
 )
 
 func getCoserExistDirPath(uid string, userName string, autoCreateOrUpdate bool) string {
-	userName = trimInvalidChar(userName)
-	// 用户名中的 "-" 会被替换为 "="
-	userName = strings.Replace(userName, "-", "=", -1)
+	userName = getVaildName(userName)
 
 	dirList, dirNameList, _ := getDirList("./cos", uid+"-")
 	//glog.Info("dirList %v\n", dirList)
@@ -31,7 +29,16 @@ func getCoserExistDirPath(uid string, userName string, autoCreateOrUpdate bool) 
 		secondPart = strings.TrimLeft(dirNameList[0], uid+"-")
 	}
 
-	nameArray := strings.Split(secondPart, "-")
+	nameArrayTmp := strings.Split(secondPart, "-")
+
+	nameArray := make([]string, 0, 0)
+	for i := 0; i < len(nameArrayTmp); i++ {
+		if nameArrayTmp[i] != "" && nameArrayTmp[i] != "-" {
+			nameArray = append(nameArray, nameArrayTmp[i])
+		}
+	}
+
+	//glog.Info("nameArray %v len %d", nameArray, len(nameArray))
 
 	if len(nameArray) > 1 {
 		if nameArray[1] != userName {
@@ -46,6 +53,8 @@ func getCoserExistDirPath(uid string, userName string, autoCreateOrUpdate bool) 
 	}
 
 	nameUnion := uid + "-" + nameArray[0]
+
+	//glog.Info("%v %v %v", nameUnion, uid, nameArray)
 
 	if len(nameArray) > 1 {
 		nameUnion += "-" + nameArray[1]

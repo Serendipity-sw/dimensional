@@ -260,6 +260,9 @@ func userSendPostsProcess(userCOSPostsUrlPath string) {
 	}
 
 	userName := doc.Find(".js-userTpl").Find(".fz14.blue1").First().Text()
+	if userName == "xMorix" {
+		userName = "xMorix555"
+	}
 
 	uid, err := getUserIndexByDetailPageDoc(doc)
 	if err != nil {

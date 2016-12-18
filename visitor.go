@@ -38,32 +38,42 @@ func getCoserExistDirPath(uid string, userName string, autoCreateOrUpdate bool) 
 		if nameArray[1] != userName {
 			nameArray[1] = userName
 		}
-	} else {
-		if len(nameArray) == 0 {
+	} else if len(nameArray) == 1 {
+		if nameArray[0] != userName {
 			nameArray = append(nameArray, userName)
-		} else if len(nameArray) > 0 && nameArray[0] != userName {
-			nameArray[0] = userName
 		}
+	} else if len(nameArray) == 0 {
+		nameArray = append(nameArray, userName)
 	}
 
 	nameUnion := uid + "-" + nameArray[0]
-
-	glog.Info(fmt.Sprintf("nameUnion %s\n", nameUnion))
 
 	if len(nameArray) > 1 {
 		nameUnion += "-" + nameArray[1]
 	}
 
+	glog.Info(fmt.Sprintf("nameUnion %s\n", nameUnion))
+
 	currentPath := "./cos/" + nameUnion
 
-	if formerPath != currentPath && formerPath != "" {
+	glog.Info(fmt.Sprintf("formerPath %s\n", formerPath))
+
+	if formerPath != currentPath && formerPath != "" && !fileExist(currentPath) {
 		err := os.Rename(formerPath, currentPath)
 		_ = err
+		glog.Info(fmt.Sprintf("%v\n", err))
 	}
 
 	glog.Info(fmt.Sprintf("currentPath %s\n", currentPath))
 
 	return currentPath
+}
+
+// 检查文件或目录是否存在
+// 如果由 filename 指定的文件或目录存在则返回 true，否则返回 false
+func fileExist(filename string) bool {
+	_, err := os.Stat(filename)
+	return err == nil || os.IsExist(err)
 }
 
 func getDirList(dirPth string, prefix string) (dirList []string, dirNameList []string, err error) {

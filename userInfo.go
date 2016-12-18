@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"os"
 	"strconv"
 	"strings"
 
@@ -147,6 +148,9 @@ func (this *UserInfo) AnalyseFollowingInfo() (err error) {
 
 		httpUrl := ""
 		for pageNumber := 1; pageNumber <= lastPageNumber; pageNumber++ {
+			if pageNumber > 2 {
+				break
+			}
 			httpUrl = fmt.Sprintf("http://bcy.net/u/%s/following?&p=%d", this.Id, pageNumber)
 			glog.Info("%v\n", httpUrl)
 			attentionPage, err := httpclient.Get(httpUrl, nil)
@@ -272,52 +276,72 @@ func (this *UserInfo) AnalysePostCosInfo() (err error) {
 // 解析用户作品页面的图片 适配于cos作品
 // 存储在 PostInfo.Image 数组
 // 不做其他操作
-func (this *PostInfo) AnalysePostCosImageInfo() (err error) {
-	//func userSendPostsProcess(userCOSPostsUrlPath string) {
+func (this *PostInfo) AnalysePostCosImageInfo(useCache bool, mkdir bool) (err error) {
 	this.Image = make([]string, 0, 0)
-	attentionPage, err := httpclient.WithCookie(cookies...).Get(this.Url, nil)
-	if err != nil {
-		glog.Error("userSendPostsProcess send http err! httpUrl: %s err: %s \n", this.Url, err.Error())
-		return err
-	}
 
-	doc, err := goquery.NewDocumentFromReader(attentionPage.Body)
-	attentionPage.Body.Close()
-	if err != nil {
-		glog.Error("userSendPostsProcess read body err! userCOSPostsUrlPath: %s err: %s \n", this.Url, err.Error())
-		return err
-	}
+	var doc *goquery.Document
+	cacheFilePath := this.PathStorage + "/" + "post.html"
 
-	//coserDirName := getCoserDir(uid, userName)
-	//mkdirPath := fmt.Sprintf("./cos/%s", coserDirName)
-
-	//mkdirPath := this.PathStorage
-
-	//	err = os.MkdirAll(mkdirPath, 0777)
-	//	if err != nil {
-	//		glog.Error("userSendPostsProcess create file err! mkdirPath: %s err: %s \n", mkdirPath, err.Error())
-	//		return err
-	//	}
-	//	mkdirPathFileName := doc.Find(".js-post-title").First().Text()
-	//	mkdirPathFileName = strings.TrimSpace(mkdirPathFileName)
-	//	mkdirPathFileNamePath := fmt.Sprintf("%s/%s", mkdirPath, getVaildName(mkdirPathFileName))
-	//	bo, _ := pathExists(mkdirPathFileNamePath)
-	//	if bo {
-	//		return errors.New(fmt.Sprintf("pathExists [%s]\n", mkdirPathFileNamePath))
-	//	}
-	//	err = os.MkdirAll(mkdirPathFileNamePath, 0777)
-	//	if err != nil {
-	//		glog.Error("userSendPostsProcess userCOSPosts exsis! mkdirPathFileNamePath: %s err: %s \n", mkdirPathFileNamePath, err.Error())
-	//		return err
-	//	}
-	doc.Find(".detail_std.detail_clickable").Each(func(indexNumber int, nodeObj *goquery.Selection) {
-		COSPictureUrlStr, bo := nodeObj.Attr("src")
-		if bo {
-			COSPictureUrlStr = COSPictureUrlStr[:strings.LastIndex(COSPictureUrlStr, "/")]
-			//pictureDown(COSPictureUrlStr, mkdirPathFileNamePath)
-			this.Image = append(this.Image, COSPictureUrlStr)
+	if mkdir {
+		err = os.MkdirAll(this.PathStorage, 0777)
+		if err != nil {
+			glog.Error("AnalysePostCosImageInfo create file err! mkdirPath: %s err: %s \n", this.PathStorage, err.Error())
+			return err
 		}
-	})
+	}
+
+	if useCache && fileExist(cacheFilePath) {
+		fi, err := os.Open(cacheFilePath)
+		if err != nil {
+			panic(err)
+		}
+		doc, err = goquery.NewDocumentFromReader(fi)
+		fi.Close()
+	} else {
+		attentionPage, err := httpclient.WithCookie(cookies...).Get(this.Url, nil)
+		if err != nil {
+			glog.Error("AnalysePostCosImageInfo send http err! httpUrl: %s err: %s \n", this.Url, err.Error())
+			return err
+		}
+
+		os.Remove(cacheFilePath)
+		dstFile, err := os.Create(cacheFilePath)
+		if err != nil {
+			glog.Error("Create cache file fail %s, err: %s\n", cacheFilePath, err.Error())
+			doc, err = goquery.NewDocumentFromReader(attentionPage.Body)
+		} else {
+			bodyString, _ := attentionPage.ToString()
+			dstFile.WriteString(bodyString)
+			glog.Info("Create cache file %s, len: %d\n", cacheFilePath, len(bodyString))
+			dstFile.Close()
+
+			fi, err := os.Open(cacheFilePath)
+			if err != nil {
+				panic(err)
+			}
+			doc, err = goquery.NewDocumentFromReader(fi)
+			fi.Close()
+		}
+
+		attentionPage.Body.Close()
+	}
+
+	if err != nil {
+		glog.Error("AnalysePostCosImageInfo read body err! userCOSPostsUrlPath: %s err: %s \n", this.Url, err.Error())
+		return err
+	}
+
+	target := doc.Find(".detail_std.detail_clickable")
+	if target != nil {
+		target.Each(func(indexNumber int, nodeObj *goquery.Selection) {
+			COSPictureUrlStr, bo := nodeObj.Attr("src")
+			if bo {
+				COSPictureUrlStr = COSPictureUrlStr[:strings.LastIndex(COSPictureUrlStr, "/")]
+				//pictureDown(COSPictureUrlStr, mkdirPathFileNamePath)
+				this.Image = append(this.Image, COSPictureUrlStr)
+			}
+		})
+	}
 	return nil
 }
 

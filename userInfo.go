@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
+	"net/http"
 	"os"
 	"strconv"
 	"strings"
@@ -341,6 +343,46 @@ func (this *PostInfo) AnalysePostCosImageInfo(useCache bool, mkdir bool) (err er
 				this.Image = append(this.Image, COSPictureUrlStr)
 			}
 		})
+	}
+	return nil
+}
+
+// 下载用户作品页面的图片 适配于cos作品
+// 下载 PostInfo.Image 数组中存储的图片地址
+// 已经存在的图片文件不会重复下载
+func (this *PostInfo) DownloadPostCosImage() (err error) {
+	err = os.MkdirAll(this.PathStorage, 0777)
+	if err != nil {
+		glog.Error("DownloadPostCosImage create file err! mkdirPath: %s err: %s \n", this.PathStorage, err.Error())
+		return err
+	}
+
+	for _, url := range this.Image {
+		urlPathArray := strings.Split(url, "/")
+		imageFileName := urlPathArray[len(urlPathArray)-1]
+		imageFilePath := this.PathStorage + "/" + imageFileName
+
+		if fileExist(imageFilePath) {
+			glog.Info("DownloadPostCosImage %s [Exist]\n", url)
+			continue
+		}
+
+		//res, err := http.WithHeaders(appConfig.HttpHeaderForNormal).Get(url)
+		res, err := http.Get(url)
+		if err != nil {
+			glog.Error("DownloadPostCosImage send http err! url: %s err: %s \n", url, err.Error())
+			return err
+		}
+
+		file, err := os.Create(imageFilePath)
+		if err != nil {
+			glog.Error("DownloadPostCosImage picute create err! filePath: %s err: %s \n", imageFilePath, err.Error())
+			return err
+		}
+		io.Copy(file, res.Body)
+		glog.Info("DownloadPostCosImage image filePath: %s \n", imageFilePath)
+		res.Body.Close()
+		file.Close()
 	}
 	return nil
 }

@@ -94,8 +94,12 @@ func analysisAllFollowUser(uid string, pagerNumber int) {
 	//	coser := &UserInfo{}
 	//	coser.Init(user.FollowingUid[1])
 	//	coser.AnalysePostCosInfo()
-	//	for _, value := range coser.PostCos {
-	//		err := value.AnalysePostCosImageInfo(true, true)
+	//	for _, post := range coser.PostCos {
+	//		err := post.AnalysePostCosImageInfo(true, true)
+	//		if err != nil {
+	//			glog.Info("err %s\n", err.Error())
+	//		}
+	//		err = post.DownloadPostCosImage()
 	//		if err != nil {
 	//			glog.Info("err %s\n", err.Error())
 	//		}

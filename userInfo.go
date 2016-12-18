@@ -194,80 +194,81 @@ func (this *UserInfo) AnalyseFollowingInfo() (err error) {
 // 不做其他操作
 func (this *UserInfo) AnalysePostCosInfo() (err error) {
 	userPageHomeUrl := fmt.Sprintf("http://bcy.net/u/%s/post/Cos", this.Id)
-	glog.Info("userPageHomeUrl %s\n", userPageHomeUrl)
+	glog.Info("AnalysePostCosInfo userPageHomeUrl %s\n", userPageHomeUrl)
 	attentionPage, err := httpclient.Get(userPageHomeUrl, nil)
 	if err != nil {
 		glog.Error("AnalysePostCosInfo send http err! url: %s err: %s \n", userPageHomeUrl, err.Error())
-		return
+		return err
 	}
 	doc, err := goquery.NewDocumentFromReader(attentionPage.Body)
 	attentionPage.Body.Close()
 	if err != nil {
 		glog.Error("AnalysePostCosInfo page analysis err! err: %s \n", err.Error())
-		return
+		return err
 	}
+
+	lastPageNumber := 1
 	pageNumberANode, bo := doc.Find(".l-home-follow-pager li").Last().Find("a").Attr("href")
 	if bo {
 		pageNumberArray := strings.Split(pageNumberANode, "p=")
 		if len(pageNumberArray) != 2 {
 			glog.Error("AnalysePostCosInfo pageNumber analysis err! pageNumberANode: %s \n", pageNumberANode)
 		}
-		lastPageNumber, err := strconv.Atoi(pageNumberArray[1])
+		lastPageNumber, err = strconv.Atoi(pageNumberArray[1])
 		if err != nil {
 			glog.Error("AnalysePostCosInfo pageNumber can't convert string to int! pageNumberArraye: %v err: %s \n", pageNumberArray, err.Error())
 			return err
 		}
-		//analysisFollowUserCOSEveryPage(userPageHomeUrl, pageNumber)
+	}
 
-		glog.Info("AnalysePostCosInfo pageNumber %d\n", lastPageNumber)
+	glog.Info("AnalysePostCosInfo pageNumber %d\n", lastPageNumber)
 
-		for pageNumber := 1; pageNumber <= lastPageNumber; pageNumber++ {
-			httpUrl := fmt.Sprintf("%s?p=%d", userPageHomeUrl, pageNumber)
-			glog.Info("httpUrl %s\n", httpUrl)
-			attentionPage, err := httpclient.Get(httpUrl, nil)
-			if err != nil {
-				glog.Error("AnalysePostCosInfo send http err! httpUrl: %s err: %s \n", httpUrl, err.Error())
-				return err
-			}
-			doc, err := goquery.NewDocumentFromReader(attentionPage.Body)
-			attentionPage.Body.Close()
-			if err != nil {
-				glog.Error("AnalysePostCosInfo analysis documenterr! sendHttp: %s  err: %s \n", httpUrl, err.Error())
-				return err
-			}
-			doc.Find(".l-grid__inner li").Each(func(indexNumber int, nodeObj *goquery.Selection) {
-				post := &PostInfo{}
-
-				// 解析作品地址
-				hrefUrlPath, bo := nodeObj.Find("a").First().Attr("href")
-				if !bo {
-					return
-				}
-				post.Url = fmt.Sprintf("http://bcy.net%s", hrefUrlPath)
-
-				//userSendPostsProcess(fmt.Sprintf("http://bcy.net%s", hrefUrlPath))
-
-				// 解析作品ID
-				idArray := strings.Split(hrefUrlPath, "/")
-				if len(idArray) == 0 {
-					return
-				}
-				post.Id = idArray[len(idArray)-1]
-
-				// 解析作品标题
-				titlePure := nodeObj.Find("footer").First().Text()
-				title := getVaildName(titlePure)
-
-				post.TitlePure = titlePure
-				post.Title = title
-
-				post.PathStorage = this.PathStorage + "/cos/" + post.Id + "-" + post.Title
-
-				post.Image = make([]string, 0, 0)
-
-				this.PostCos = append(this.PostCos, post)
-			})
+	for pageNumber := 1; pageNumber <= lastPageNumber; pageNumber++ {
+		httpUrl := fmt.Sprintf("%s?p=%d", userPageHomeUrl, pageNumber)
+		glog.Info("httpUrl %s\n", httpUrl)
+		attentionPage, err := httpclient.Get(httpUrl, nil)
+		if err != nil {
+			glog.Error("AnalysePostCosInfo send http err! httpUrl: %s err: %s \n", httpUrl, err.Error())
+			return err
 		}
+		doc, err := goquery.NewDocumentFromReader(attentionPage.Body)
+		attentionPage.Body.Close()
+		if err != nil {
+			glog.Error("AnalysePostCosInfo analysis documenterr! sendHttp: %s  err: %s \n", httpUrl, err.Error())
+			return err
+		}
+		doc.Find(".l-grid__inner li").Each(func(indexNumber int, nodeObj *goquery.Selection) {
+			post := &PostInfo{}
+
+			// 解析作品地址
+			hrefUrlPath, bo := nodeObj.Find("a").First().Attr("href")
+			if !bo {
+				return
+			}
+			post.Url = fmt.Sprintf("http://bcy.net%s", hrefUrlPath)
+
+			//userSendPostsProcess(fmt.Sprintf("http://bcy.net%s", hrefUrlPath))
+
+			// 解析作品ID
+			idArray := strings.Split(hrefUrlPath, "/")
+			if len(idArray) == 0 {
+				return
+			}
+			post.Id = idArray[len(idArray)-1]
+
+			// 解析作品标题
+			titlePure := nodeObj.Find("footer").First().Text()
+			title := getVaildName(titlePure)
+
+			post.TitlePure = titlePure
+			post.Title = title
+
+			post.PathStorage = this.PathStorage + "/cos/" + post.Id + "-" + post.Title
+
+			post.Image = make([]string, 0, 0)
+
+			this.PostCos = append(this.PostCos, post)
+		})
 	}
 
 	return
